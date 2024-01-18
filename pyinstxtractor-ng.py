@@ -203,7 +203,7 @@ class PyInstArchive:
             if name.startswith("/"):
                 name = name.lstrip("/")
 
-            if len(name) == 0:
+            if not name:
                 name = str(uniquename())
                 print(
                     "[!] Warning: Found an unamed file in CArchive. Using random name {0}".format(
@@ -243,7 +243,7 @@ class PyInstArchive:
     def extractFiles(self, one_dir):
         print("[+] Beginning extraction...please standby")
         extractionDir = os.path.join(
-            os.getcwd(), os.path.basename(self.filePath) + "_extracted"
+            os.getcwd(), f"{os.path.basename(self.filePath)}_extracted"
         )
 
         if not os.path.exists(extractionDir):
@@ -261,7 +261,7 @@ class PyInstArchive:
                 # Comment out the assertion in such a case
                 assert len(data) == entry.uncmprsdDataSize  # Sanity Check
 
-            if entry.typeCmprsData == b"d" or entry.typeCmprsData == b"o":
+            if entry.typeCmprsData in [b"d", b"o"]:
                 # d -> ARCHIVE_ITEM_DEPENDENCY
                 # o -> ARCHIVE_ITEM_RUNTIME_OPTION
                 # These are runtime options, not files
@@ -280,10 +280,10 @@ class PyInstArchive:
 
                 if self.pycMagic == b"\0" * 4:
                     # if we don't have the pyc header yet, fix them in a later pass
-                    self.barePycList.append(entry.name + ".pyc")
-                self._writePyc(entry.name + ".pyc", data)
+                    self.barePycList.append(f"{entry.name}.pyc")
+                self._writePyc(f"{entry.name}.pyc", data)
 
-            elif entry.typeCmprsData == b"M" or entry.typeCmprsData == b"m":
+            elif entry.typeCmprsData in [b"M", b"m"]:
                 # M -> ARCHIVE_ITEM_PYPACKAGE
                 # m -> ARCHIVE_ITEM_PYMODULE
                 # packages and modules are pyc files with their header intact
@@ -293,8 +293,8 @@ class PyInstArchive:
                 if data[2:4] == b"\r\n":
                     # < pyinstaller 5.3
                     if self.pycMagic == b"\0" * 4:
-                        self.pycMagic = data[0:4]
-                    self._writeRawData(entry.name + ".pyc", data)
+                        self.pycMagic = data[:4]
+                    self._writeRawData(f"{entry.name}.pyc", data)
 
                     if entry.name.endswith("_crypto_key"):
                         print(
@@ -308,9 +308,9 @@ class PyInstArchive:
                     # >= pyinstaller 5.3
                     if self.pycMagic == b"\0" * 4:
                         # if we don't have the pyc header yet, fix them in a later pass
-                        self.barePycList.append(entry.name + ".pyc")
+                        self.barePycList.append(f"{entry.name}.pyc")
 
-                    self._writePyc(entry.name + ".pyc", data)
+                    self._writePyc(f"{entry.name}.pyc", data)
 
                     if entry.name.endswith("_crypto_key"):
                         print(
@@ -322,7 +322,7 @@ class PyInstArchive:
             else:
                 self._writeRawData(entry.name, data)
 
-                if entry.typeCmprsData == b"z" or entry.typeCmprsData == b"Z":
+                if entry.typeCmprsData in [b"z", b"Z"]:
                     self._extractPyz(entry.name, one_dir)
 
         # Fix bare pyc's if any
@@ -395,7 +395,7 @@ class PyInstArchive:
         if one_dir == True:
             dirName = "."
         else:
-            dirName = name + "_extracted"
+            dirName = f"{name}_extracted"
             # Create a directory for the contents of the pyz
             if not os.path.exists(dirName):
                 os.mkdir(dirName)
@@ -452,7 +452,7 @@ class PyInstArchive:
                     filePath = os.path.join(dirName, fileName, "__init__.pyc")
 
                 else:
-                    filePath = os.path.join(dirName, fileName + ".pyc")
+                    filePath = os.path.join(dirName, f"{fileName}.pyc")
 
                 fileDir = os.path.dirname(filePath)
                 if not os.path.exists(fileDir):
@@ -482,9 +482,9 @@ class PyInstArchive:
                                     filePath
                                 )
                             )
-                            open(filePath + ".encrypted", "wb").write(data_copy)
+                            open(f"{filePath}.encrypted", "wb").write(data_copy)
                             continue
-                
+
                 self._writePyc(filePath, data)
 
 
